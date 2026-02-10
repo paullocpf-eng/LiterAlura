@@ -1,10 +1,13 @@
 package br.com.alura.literalura.principal;
 
-import br.com.alura.literalura.model.DadosGutendex;
-import br.com.alura.literalura.model.DadosLivro;
+import br.com.alura.literalura.model.*;
+import br.com.alura.literalura.repository.AutorRepository;
+import br.com.alura.literalura.repository.LivroRepository;
 import br.com.alura.literalura.service.ConsumoApi;
 import br.com.alura.literalura.service.ConverteDados;
 
+import javax.swing.text.html.Option;
+import java.util.Optional;
 import java.util.Scanner;
 
 public class Principal {
@@ -58,15 +61,49 @@ public class Principal {
         }
     }
 
+    private LivroRepository livroRepositorio;
+    private AutorRepository autorRepositorio;
+
+    public Principal(LivroRepository livroRepositorio, AutorRepository autorRepositorio) {
+        this.livroRepositorio = livroRepositorio;
+        this.autorRepositorio = autorRepositorio;
+    }
+
     private void buscarLivroWeb() {
         System.out.println("Digite o nome do livro para busca: ");
         var nomeLivro = leitura.nextLine();
 
         //Monta a URL (ex: ...search=dom+casmurro)
-        var enderecoBusca = ENDERECO + nomeLivro.replace(" ", "+"); //No lugar dos espaços troca para o +
-
-        var json = consummo.obterDados(enderecoBusca);
+        var json = consummo.obterDados(ENDERECO + nomeLivro.replace(" ", "+")); //No lugar dos espaços troca para o +
         var dados = conversor.obterDados(json, DadosGutendex.class);
+
+        //Filtrando e pegando o primeiro resultado
+        Optional<DadosLivro> livroBuscado = dados.resultados().stream()
+                .filter(l -> l.titulo().toUpperCase().contains(nomeLivro.toUpperCase()))
+                .findFirst();
+        if (livroBuscado.isPresent()) {
+            DadosLivro dadosLivro = livroBuscado.get();
+
+            //Lógica para não duplicar o autor
+            DadosAutor dadosAutor = dadosLivro.autores().get(0);
+
+            //Buscando no banco se o autor já existe
+            Autor autor = autorRepositorio.findByNomeContainingIgnoreCase(dadosAutor.nome())
+                    .orElseGet(() -> {
+                        //Se não econtrar, (orElseGet) cria um novo e salva
+                        Autor novoAutor = new Autor(dadosAutor);
+                        return autorRepositorio.save(novoAutor);
+                    });
+
+            //Salvando o livro vinculado ao autor correto
+            Livro livro = new Livro(dadosLivro);
+            livro.setAutor(autor);
+            livroRepositorio.save(livro);
+
+            System.out.println("Livro salvo com sucesso.");
+        } else {
+            System.out.println("Livro não encontrado.");
+        }
 
         System.out.println("--- RESULTADO DA API ---");
 
