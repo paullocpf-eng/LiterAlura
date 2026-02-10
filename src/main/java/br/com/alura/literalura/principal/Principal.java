@@ -7,6 +7,7 @@ import br.com.alura.literalura.service.ConsumoApi;
 import br.com.alura.literalura.service.ConverteDados;
 
 import javax.swing.text.html.Option;
+import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -39,13 +40,13 @@ public class Principal {
                     buscarLivroWeb();
                     break;
                 case 2:
-                    System.out.println("Ainda não pronto");
+                    listarLivros();
                     break;
                 case 3:
-                    System.out.println("Ainda não pronto");
+                    listarAutores();
                     break;
                 case 4:
-                    System.out.println("Ainda não pronto");
+                    listarAutoresVivos();
                     break;
                 case 5:
                     System.out.println("Ainda não pronto");
@@ -114,6 +115,48 @@ public class Principal {
             System.out.println(livroEncontrado);
         }
     }
+
+    private void listarLivros() {
+        //Busca todos os livros no banco
+        List<Livro> livros = livroRepositorio.findAll();
+
+        //Ordena por padrão do banco
+        livros.forEach(System.out::println);
+    }
+
+    private void listarAutores() {
+        List<Autor> autores = autorRepositorio.findAll();
+
+        autores.stream().forEach(a -> {
+            System.out.println("Autor: " + a.getNome());
+            System.out.println("Ano de nascimento: " + a.getAnoNascimento());
+            System.out.println("Ano de falecimento: " + a.getAnoFalecimento());
+
+            //Aqui usamos stream para pegar apenas os títulos dos livros desse autor
+            List<String> livrosDoAutor = a.getLivros().stream()
+                    .map(l -> l.getTitulo())
+                    .toList();
+            System.out.println("Livros: " + livrosDoAutor);
+            System.out.println("----------------------------------------------");
+        });
+    }
+
+    private void listarAutoresVivos() {
+        System.out.println("Digite o ano que deseja pesquisar:");
+        var ano = leitura.nextInt();
+        leitura.nextLine(); //Limpeza de Buffer depois de ler número
+
+        List<Autor> autoresVivos = autorRepositorio.obterAutoresVivosNoAno(ano);
+
+        if (autoresVivos.isEmpty()) {
+            System.out.println("Nenhum autor vivo encontrado nesse ano.");
+        } else {
+            System.out.println("--- AUTORES VIVOS EM " + ano + " ---");
+            autoresVivos.forEach(System.out::println);
+            System.out.println("-----------------------------------------");
+        }
+    }
+
 }
 
 
