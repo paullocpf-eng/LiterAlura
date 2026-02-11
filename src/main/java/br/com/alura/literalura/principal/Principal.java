@@ -6,7 +6,7 @@ import br.com.alura.literalura.repository.LivroRepository;
 import br.com.alura.literalura.service.ConsumoApi;
 import br.com.alura.literalura.service.ConverteDados;
 
-import javax.swing.text.html.Option;
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
@@ -21,19 +21,26 @@ public class Principal {
         var opcao = -1;
         while (opcao != 0) {
             var menu = """
-                       ESCOLHA UMA OPÇÃO:
-                       1 - Buscar livro pelo Título
-                       2 - Listar livros registrados
-                       3 - Listar autores registrados
-                       4 - Listar autores vivos em determinado ano
-                       5 - Listar livros em um determinado idioma
-                       
-                       0 - Sair
-                       """;
+                    ESCOLHA UMA OPÇÃO:
+                    1 - Buscar livro pelo Título
+                    2 - Listar livros registrados
+                    3 - Listar autores registrados
+                    4 - Listar autores vivos em determinado ano
+                    5 - Listar livros em um determinado idioma
+                    
+                    0 - Sair
+                    """;
 
             System.out.println(menu);
-            opcao = leitura.nextInt();
-            leitura.nextLine(); //Limpa o buffer do teclado após ler um número
+
+            try {
+                opcao = leitura.nextInt();
+                leitura.nextLine(); //Limpa o buffer do teclado após ler um número
+            } catch (InputMismatchException e) {
+                System.out.println("Erro: Digite apenas números inteiros.\n");
+                leitura.nextLine(); // Limpar o buffer do que foi digitado errado
+                continue; // Volta para o início do while
+            }
 
             switch (opcao) {
                 case 1:
@@ -49,7 +56,7 @@ public class Principal {
                     listarAutoresVivos();
                     break;
                 case 5:
-                    System.out.println("Ainda não pronto");
+                    listarLivrosPorIdioma();
                     break;
                 case 0:
                     System.out.println("Saindo...");
@@ -143,20 +150,45 @@ public class Principal {
 
     private void listarAutoresVivos() {
         System.out.println("Digite o ano que deseja pesquisar:");
-        var ano = leitura.nextInt();
-        leitura.nextLine(); //Limpeza de Buffer depois de ler número
+        try {
+            var ano = leitura.nextInt();
+            leitura.nextLine(); //Limpeza de Buffer depois de ler número
 
-        List<Autor> autoresVivos = autorRepositorio.obterAutoresVivosNoAno(ano);
+            List<Autor> autoresVivos = autorRepositorio.obterAutoresVivosNoAno(ano);
 
-        if (autoresVivos.isEmpty()) {
-            System.out.println("Nenhum autor vivo encontrado nesse ano.");
-        } else {
-            System.out.println("--- AUTORES VIVOS EM " + ano + " ---");
-            autoresVivos.forEach(System.out::println);
-            System.out.println("-----------------------------------------");
+            if (autoresVivos.isEmpty()) {
+                System.out.println("Nenhum autor vivo encontrado nesse ano.");
+            } else {
+                System.out.println("--- AUTORES VIVOS EM " + ano + " ---");
+                autoresVivos.forEach(System.out::println);
+                //System.out.println("-----------------------------------------");
+            }
+        } catch (InputMismatchException e) {
+            System.out.println("Favor inserir o ano em formato número.\n");
+            leitura.nextLine();
         }
     }
 
+    private void listarLivrosPorIdioma() {
+        System.out.println("""
+                           Insira o idioma para realizar a busca:
+                           es - espanhol
+                           en - inglês
+                           fr - francês
+                           pt - português
+                           """);
+        var idioma = leitura.nextLine();
+
+        List<Livro> livrosPorIdioma = livroRepositorio.findByIdiomaIgnoreCase(idioma);
+
+        if (livrosPorIdioma.isEmpty()) {
+            System.out.println("Não existem livros nesse idioma no banco de dados.");
+        } else {
+            System.out.println("--- LIVROS EM '" + idioma.toUpperCase() + "' ---");
+            livrosPorIdioma.forEach(System.out::println);
+            //System.out.println("-----------------------------");
+        }
+    }
 }
 
 
